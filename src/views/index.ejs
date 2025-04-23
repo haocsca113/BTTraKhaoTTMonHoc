@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <div class="container mt-4">
+      <header class="mb-4">
+        <h1 class="text-center text-primary"><%= title %></h1>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light rounded">
+          <div class="container-fluid">
+            <a class="navbar-brand" href="/">Trang chủ</a>
+
+            <div class="d-flex">
+              <% if (user) { %>
+                <a href="/my-courses" class="btn btn-outline-info ms-2">Môn học của tôi</a>
+                <span class="me-2 ms-2 align-self-center text-success fw-bold">Chào, <%= user.username %></span>
+                <a href="/logout" class="btn btn-outline-secondary">Đăng xuất</a>
+              <% } else { %>
+                <a href="/login" class="btn btn-outline-primary me-2 ms-2">Đăng nhập</a>
+                <a href="/register" class="btn btn-outline-success">Đăng ký</a>
+              <% } %>
+            </div>
+
+          </div>
+        </nav>
+      </header>
+
+      <main>
+        <!-- <h2><%= title %></h2> -->
+
+        <form action="/search" method="GET" class="d-flex mb-4">
+          <input type="text" name="q" placeholder="Tìm kiếm môn học..." />
+          <button type="submit" class="btn btn-primary" style="margin-left: 5px;">Tìm kiếm</button>
+        </form>
+
+        <ul class="list-group">
+          <% if (courses.length > 0) { %>
+            <% courses.forEach(course => { %>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-primary">ID: <%= course.id %></span>
+                  <a href="/course/<%= course.id %>" class="text-decoration-none text-dark"><%= course.name %></a>
+                </div>
+
+                <% if(user) { %>
+                  
+                  <div class="text-end" style="width: 200px;">
+                    <% const registeredCount = registrationsByCourse[course._id.toString()] || 0; %>
+                    <% if (registeredCourseIds.includes(course._id.toString())) { %>
+                      <span class="badge bg-success">Đã đăng ký</span>
+                      <form action="/courses/unregister/<%= course._id %>" method="POST" onsubmit="return confirm('Bạn có chắc muốn huỷ đăng ký này?')" class="d-inline">
+                        <button class="btn btn-sm btn-outline-danger">Hủy đăng ký</button>
+                      </form>
+                    <% } else if (registeredCount >= course.maxStudents) { %>
+                      <span class="badge bg-secondary">Đã đủ số lượng</span>
+                    <% } else { %>
+                      <form action="/courses/register/<%= course._id %>" method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Đăng ký</button>
+                      </form>
+                    <% } %>
+                    <small class="text-muted d-block"><%= registeredCount %>/<%= course.maxStudents %> sinh viên đã đăng ký</small>
+                  </div>
+                  
+                <% } %>
+              </li>
+            <% }); %>
+          <% } else { %>
+            <li>Không có môn học nào.</li>
+          <% } %>
+        </ul>
+      </main>
+
+      <footer class="mt-4">
+        <p class="text-center text-muted">Poghao &copy; 2025 - Quản lý môn học</p>
+      </footer>
+    </div>
+  </body>
+</html>
+
