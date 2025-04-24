@@ -8,6 +8,7 @@ const path = require('path');
 const configViewEngine = require('./config/viewEngine');
 const User = require('./models/User');
 const bcrypt = require('bcrypt');
+const flash = require('connect-flash');
 
 // const webRoutes = require('./routes/web');
 
@@ -29,21 +30,6 @@ configViewEngine(app);
 //Khai báo route
 // app.use('/', webRoutes);
 
-// // Kết nối tới MongoDB
-// mongoose.connect('mongodb://127.0.0.1:27017/khoahoc_db', {
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true
-// }).then(() => {
-//     console.log('Connnected to MongoDB');
-// }).catch((err) => {
-//     console.error('Error connecting to MongoDB', err);
-// });
-
-// app.listen(port, hostname ,() => {
-//     console.log(`Server listening on http://${hostname}:${port}`);
-// });
-
-
 mongoose.connect('mongodb://127.0.0.1:27017/khoahoc_db', {
     useNewUrlParser: true,
     useUnifiedTopology: true
@@ -61,6 +47,13 @@ mongoose.connect('mongodb://127.0.0.1:27017/khoahoc_db', {
         }),
         cookie: { maxAge: 1000 * 60 * 60 }
     }));
+
+    app.use(flash());
+    app.use((req, res, next) => {
+        res.locals.successMsg = req.flash('success');
+        res.locals.errorMsg = req.flash('error');
+        next();
+    });
 
     const webRouter = require('./routes/web');
     app.use('/', webRouter);

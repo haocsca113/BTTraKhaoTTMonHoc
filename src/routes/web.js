@@ -235,9 +235,11 @@ router.get('/search', async (req, res) => {
 // Trang index lay tat ca mon hoc
 router.get('/', async (req, res) => {
   const courses = await Course.find();
+  const filter = req.query.filter || 'all';
 
   let registeredCourseIds = [];
   let registrationsByCourse = {};
+  let filteredCourses = courses;
   
   if (req.session.user) {
     const regs = await Registration.find({ userId: req.session.user._id }).select('courseId');
@@ -258,12 +260,26 @@ router.get('/', async (req, res) => {
     registrationsByCourse[r._id.toString()] = r.count;
   });
 
+  // Loc mon hoc con cho va full
+  if (filter === 'available') {
+    filteredCourses = courses.filter(course => {
+      const count = registrationsByCourse[course._id.toString()] || 0;
+      return count < course.maxStudents;
+    });
+  } else if (filter === 'full') {
+    filteredCourses = courses.filter(course => {
+      const count = registrationsByCourse[course._id.toString()] || 0;
+      return count >= course.maxStudents;
+    });
+  }
+
   res.render('index', {
     title: 'Trang chủ',
-    courses,
+    courses: filteredCourses,
     user: req.session.user,
     registeredCourseIds,
-    registrationsByCourse
+    registrationsByCourse,
+    filter
   });
 });
 
@@ -300,6 +316,7 @@ router.post('/courses/register/:id', async (req, res) => {
       userId
     });
 
+    req.flash('success', 'Đăng ký môn học thành công!');
     res.redirect('back');
   } catch (err) {
     console.error(err);
@@ -314,6 +331,7 @@ router.post('/courses/unregister/:id', async (req, res) => {
 
   try {
     await Registration.deleteOne({ userId, courseId });
+    req.flash('success', 'Hủy đăng ký môn học thành công!');
     res.redirect('back');
   } catch (err) {
     console.error('Lỗi khi hủy đăng ký:', err);

@@ -12,7 +12,10 @@
       <ul class="list-group">
         <% registrations.forEach(reg => { %>
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span><strong><%= reg.courseId.name %></strong></span>
+            <div>
+              <span><strong><%= reg.courseId.name %></strong></span> <br>
+              <small class="text-muted">Đăng ký lúc: <%= new Date(reg.registeredAt).toLocaleString('vi-VN') %></small>
+            </div>
             <form action="/courses/unregister/<%= reg.courseId._id %>" method="POST" onsubmit="return confirm('Bạn có chắc muốn huỷ đăng ký này?')">
               <button type="submit" class="btn btn-danger btn-sm">Hủy đăng ký</button>
             </form>
