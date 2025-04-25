@@ -17,8 +17,29 @@
             <div class="card p-4 shadow-sm">
                 <p class="text-muted">Mã môn học: <%= course.id %></p>
                 <p class="card-text">Số lượng sinh viên tối đa: <%= course.maxStudents%></p>
+
+                <p class="card-text">
+                    Thời gian mở đăng ký: <%= new Date(course.registrationStart).toLocaleString('vi-VN') %>
+                </p>
+                <p class="card-text">
+                    Thời gian đóng đăng ký: <%= new Date(course.registrationEnd).toLocaleString('vi-VN') %>
+                </p>
+
                 <h2 class="card-title"><%= course.name %></h2>
                 <p class="card-text"><%= course.description %></p>
+
+                <% if (course.schedule && course.schedule.length > 0) { %>
+                    <h5 class="mt-4">📅 Lịch học</h5>
+                    <ul class="list-group list-group-flush">
+                      <% course.schedule.forEach(item => { %>
+                        <li class="list-group-item">
+                          <strong><%= item.day %></strong>: từ <%= item.startTime %> đến <%= item.endTime %>
+                        </li>
+                      <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="text-muted mt-3">Chưa có lịch học.</p>
+                <% } %>
             </div>
         </main>
 

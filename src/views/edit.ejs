@@ -26,7 +26,109 @@
             <label for="maxStudents" class="form-label">Số lượng sinh viên tối đa</label>
             <input type="number" name="maxStudents" class="form-control" value="<%= course.maxStudents %>" required>
           </div>
+
+          <!-- <div class="mb-3">
+            <label>Thời gian mở đăng ký</label>
+            <input type="datetime-local" name="registrationStart" class="form-control" required>
+          </div>
+  
+          <div class="mb-3">
+            <label>Thời gian đóng đăng ký</label>
+            <input type="datetime-local" name="registrationEnd" class="form-control" required>
+          </div> -->
+
+          <div class="mb-3">
+            <label>Thời gian mở đăng ký</label>
+            <input type="datetime-local" name="registrationStart" class="form-control" value="<%= new Date(course.registrationStart).toISOString().slice(0,16) %>" required>
+          </div>
+  
+          <div class="mb-3">
+            <label>Thời gian đóng đăng ký</label>
+            <input type="datetime-local" name="registrationEnd" class="form-control" value="<%= new Date(course.registrationEnd).toISOString().slice(0,16) %>" required>
+          </div>
+
+          <h5 class="mt-4">Lịch học</h5>
+          <div id="schedule-container">
+            <% if (course.schedule && course.schedule.length > 0) { %>
+              <% course.schedule.forEach((item, i) => { %>
+                <div class="row mb-2">
+                  <div class="col">
+                    <label>Ngày</label>
+                    <select name="schedule[<%= i %>][day]" class="form-select">
+                      <% ['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ nhật'].forEach(day => { %>
+                        <option value="<%= day %>" <%= item.day === day ? 'selected' : '' %>><%= day %></option>
+                      <% }) %>
+                    </select>
+                  </div>
+                  <div class="col">
+                    <label>Giờ bắt đầu</label>
+                    <input type="time" name="schedule[<%= i %>][startTime]" value="<%= item.startTime %>" class="form-control" required>
+                  </div>
+                  <div class="col">
+                    <label>Giờ kết thúc</label>
+                    <input type="time" name="schedule[<%= i %>][endTime]" value="<%= item.endTime %>" class="form-control" required>
+                  </div>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="row mb-2">
+                <div class="col">
+                  <label>Ngày</label>
+                  <select name="schedule[0][day]" class="form-select">
+                    <option>Thứ 2</option>
+                    <option>Thứ 3</option>
+                    <option>Thứ 4</option>
+                    <option>Thứ 5</option>
+                    <option>Thứ 6</option>
+                    <option>Thứ 7</option>
+                    <option>Chủ nhật</option>
+                  </select>
+                </div>
+                <div class="col">
+                  <label>Giờ bắt đầu</label>
+                  <input type="time" name="schedule[0][startTime]" class="form-control" required>
+                </div>
+                <div class="col">
+                  <label>Giờ kết thúc</label>
+                  <input type="time" name="schedule[0][endTime]" class="form-control" required>
+                </div>
+              </div>
+            <% } %>
+          </div>
+
+          <button type="button" class="btn btn-sm btn-secondary mb-3" onclick="addSchedule()">+ Thêm buổi học</button>
+
+          <script>
+            let scheduleCount = <%= course.schedule?.length || 1 %>;
+          
+            function addSchedule() {
+              const container = document.getElementById('schedule-container');
+              const html = `
+                <div class="row mb-2 schedule-item">
+                  <div class="col">
+                    <select name="schedule[\${scheduleCount}][day]" class="form-control" required>
+                      <option value="Thứ 2">Thứ 2</option>
+                      <option value="Thứ 3">Thứ 3</option>
+                      <option value="Thứ 4">Thứ 4</option>
+                      <option value="Thứ 5">Thứ 5</option>
+                      <option value="Thứ 6">Thứ 6</option>
+                      <option value="Thứ 7">Thứ 7</option>
+                      <option value="Chủ nhật">Chủ nhật</option>
+                    </select>
+                  </div>
+                  <div class="col">
+                    <input type="time" name="schedule[\${scheduleCount}][startTime]" class="form-control" required />
+                  </div>
+                  <div class="col">
+                    <input type="time" name="schedule[\${scheduleCount}][endTime]" class="form-control" required />
+                  </div>
+                </div>`;
+              container.insertAdjacentHTML('beforeend', html);
+              scheduleCount++;
+            }
+          </script>
       
+          <br>
           <button type="submit" class="btn btn-primary">Cập nhật</button>
           <a href="/admin/manage-courses" class="btn btn-secondary">Hủy</a>
         </form>

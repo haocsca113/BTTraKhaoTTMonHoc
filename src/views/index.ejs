@@ -64,10 +64,27 @@
         <ul class="list-group">
           <% if (courses.length > 0) { %>
             <% courses.forEach(course => { %>
+              <% const now = new Date(); %>
+              <% const start = new Date(course.registrationStart); %>
+              <% const end = new Date(course.registrationEnd); %>
               <li class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
                   <span class="badge bg-primary">ID: <%= course.id %></span>
                   <a href="/course/<%= course.id %>" class="text-decoration-none text-dark"><%= course.name %></a>
+
+                  <% if (course.registrationStart && course.registrationEnd) { %>
+                    <small class="text-muted">
+                      Đăng ký từ <%= course.registrationStart.toLocaleDateString('vi-VN') %> đến <%= course.registrationEnd.toLocaleDateString('vi-VN') %>
+                    </small><br>
+        
+                    <% if (now < course.registrationStart) { %>
+                      <span class="badge bg-warning text-dark">Chưa mở đăng ký</span>
+                    <% } else if (now > course.registrationEnd) { %>
+                      <span class="badge bg-danger">Hết hạn đăng ký</span>
+                    <% } else { %>
+                      <span class="badge bg-success">Đang mở đăng ký</span>
+                    <% } %>
+                  <% } %>
                 </div>
 
                 <% if(user) { %>
@@ -81,6 +98,10 @@
                       </form>
                     <% } else if (registeredCount >= course.maxStudents) { %>
                       <span class="badge bg-secondary">Đã đủ số lượng</span>
+                    <% } else if (now < start) { %>
+                      <span class="badge bg-warning">Chưa mở đăng ký</span>
+                    <% } else if (now > end) { %>
+                      <span class="badge bg-danger">Hết hạn đăng ký</span>
                     <% } else { %>
                       <form action="/courses/register/<%= course._id %>" method="POST" class="d-inline">
                         <button type="submit" class="btn btn-sm btn-outline-primary">Đăng ký</button>
@@ -96,6 +117,16 @@
             <li>Không có môn học nào.</li>
           <% } %>
         </ul>
+
+        <nav class="mt-4">
+          <ul class="pagination justify-content-center">
+            <% for (let i = 1; i <= totalPages; i++) { %>
+              <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                <a class="page-link" href="/?page=<%= i %>&filter=<%= filter %>"><%= i %></a>
+              </li>
+            <% } %>
+          </ul>
+        </nav>
       </main>
 
       <footer class="mt-4">

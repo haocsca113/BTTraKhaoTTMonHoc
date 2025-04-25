@@ -60,10 +60,46 @@ router.get('/create', auth, function(req, res) {
 });
 
 // Them mon hoc
+// router.post('/create-course', async (req, res) => {
+//   const { name, description, maxStudents, registrationStart, registrationEnd } = req.body;
+//   if (name && description && maxStudents && registrationStart && registrationEnd) {
+//     const newCourse = new Course({ name, description, maxStudents, registrationStart, registrationEnd });
+//     await newCourse.save();
+//     res.redirect('/admin/manage-courses');
+//   } else {
+//     res.status(400).send('Vui lòng nhập đầy đủ thông tin môn học.');
+//   }
+// });
+
 router.post('/create-course', async (req, res) => {
-  const { name, description, maxStudents } = req.body;
-  if (name && description && maxStudents) {
-    const newCourse = new Course({ name, description, maxStudents });
+  const {
+    name,
+    description,
+    maxStudents,
+    registrationStart,
+    registrationEnd,
+    schedule
+  } = req.body;
+
+  if (name && description && maxStudents && registrationStart && registrationEnd) {
+    // Chuyển đổi schedule nếu có (vì từ form sẽ là object)
+    const parsedSchedule = Array.isArray(schedule)
+      ? schedule
+      : Object.values(schedule).map(s => ({
+          day: s.day,
+          startTime: s.startTime,
+          endTime: s.endTime
+        }));
+
+    const newCourse = new Course({
+      name,
+      description,
+      maxStudents,
+      registrationStart: new Date(registrationStart),
+      registrationEnd: new Date(registrationEnd),
+      schedule: parsedSchedule
+    });
+
     await newCourse.save();
     res.redirect('/admin/manage-courses');
   } else {
@@ -82,9 +118,39 @@ router.get('/edit/:id', auth, async (req, res) => {
 });
 
 // Cap nhat mon hoc
+// router.post('/update-course/:id', auth, async (req, res) => {
+//   const { name, description, maxStudents, registrationStart, registrationEnd } = req.body;
+//   await Course.findByIdAndUpdate(req.params.id, { name, description, maxStudents, registrationStart, registrationEnd });
+//   res.redirect('/admin/manage-courses');
+// });
+
 router.post('/update-course/:id', auth, async (req, res) => {
-  const { name, description, maxStudents } = req.body;
-  await Course.findByIdAndUpdate(req.params.id, { name, description, maxStudents });
+  const {
+    name,
+    description,
+    maxStudents,
+    registrationStart,
+    registrationEnd,
+    schedule
+  } = req.body;
+
+  const parsedSchedule = Array.isArray(schedule)
+    ? schedule
+    : Object.values(schedule || {}).map(s => ({
+        day: s.day,
+        startTime: s.startTime,
+        endTime: s.endTime
+      }));
+
+  await Course.findByIdAndUpdate(req.params.id, {
+    name,
+    description,
+    maxStudents,
+    registrationStart: new Date(registrationStart),
+    registrationEnd: new Date(registrationEnd),
+    schedule: parsedSchedule
+  });
+
   res.redirect('/admin/manage-courses');
 });
 
@@ -234,9 +300,11 @@ router.get('/search', async (req, res) => {
 // --------------------- Route User ---------------------
 // Trang index lay tat ca mon hoc
 router.get('/', async (req, res) => {
-  const courses = await Course.find();
   const filter = req.query.filter || 'all';
-
+  const page = parseInt(req.query.page) || 1;
+  const perPage = 5;
+  
+  const courses = await Course.find();
   let registeredCourseIds = [];
   let registrationsByCourse = {};
   let filteredCourses = courses;
@@ -273,16 +341,40 @@ router.get('/', async (req, res) => {
     });
   }
 
+  // Phân trang
+  const totalCourses = filteredCourses.length;
+  const totalPages = Math.ceil(totalCourses / perPage);
+  const paginatedCourses = filteredCourses.slice((page - 1) * perPage, page * perPage);
+
+
   res.render('index', {
     title: 'Trang chủ',
-    courses: filteredCourses,
+    // courses: filteredCourses,
+    courses: paginatedCourses,
     user: req.session.user,
     registeredCourseIds,
     registrationsByCourse,
-    filter
+    filter,
+    currentPage: page,
+    totalPages
   });
 });
 
+const isScheduleConflict = (schedule1, schedule2) => {
+  for (let s1 of schedule1) {
+    for (let s2 of schedule2) {
+      if (s1.day === s2.day) {
+        const [s1Start, s1End] = [s1.startTime, s1.endTime];
+        const [s2Start, s2End] = [s2.startTime, s2.endTime];
+
+        if (s1Start < s2End && s2Start < s1End) {
+          return true; // trùng lịch
+        }
+      }
+    }
+  }
+  return false;
+};
 // Dang ky mon hoc
 router.post('/courses/register/:id', async (req, res) => {
   if (!req.session.user) {
@@ -295,6 +387,30 @@ router.post('/courses/register/:id', async (req, res) => {
   try {
     const course = await Course.findById(courseId);
     const count = await Registration.countDocuments({ courseId });
+    const now = new Date();
+
+    // Lấy các môn user đã đăng ký
+    const existingRegs = await Registration.find({ userId }).populate('courseId');
+
+    // Kiểm tra trùng lịch
+    for (const reg of existingRegs) {
+      const otherCourse = reg.courseId;
+      if (isScheduleConflict(course.schedule, otherCourse.schedule)) {
+        req.flash('error', `Lịch học trùng với môn "${otherCourse.name}".`);
+        return res.redirect('back');
+      }
+    }
+
+    // Kiem tra thoi gian mo/dong dang ky
+    if (now < course.registrationStart) {
+      req.flash('error', 'Chưa đến thời gian mở đăng ký môn học.');
+      return res.redirect('back');
+    }
+
+    if (now > course.registrationEnd) {
+      req.flash('error', 'Thời gian đăng ký môn học đã kết thúc.');
+      return res.redirect('back');
+    }
 
     // Kiểm tra giới hạn
     if (count >= course.maxStudents) {
